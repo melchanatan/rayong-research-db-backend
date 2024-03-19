@@ -1,0 +1,112 @@
+Requirement
+- Login page
+- Fetch&Search content
+- Download file
+- Upload file
+- Count download
+
+Document Database ("Doc")
+- _id (id)
+- DocName (String)
+- Content (String)
+- DownloadCount (int)
+- Link (String)
+
+Topic database ("Topic")
+- _id (id)
+- TopicName (String)
+- FieldColor (String)
+- posX (int)
+- poxY (int)
+- DocID [array of (doc id)]
+
+File storage
+
+Get <research id> from <user's specify topic>
+Get <research content> from <research id>
+Get <All> from <research id>
+Get <research count> and <download count> from <topic>
+
+
+TODO:
+Deployment mode + HTTPS
+GetDocID return id as string not object
+Multiple Document data query
+
+Add/Remove Topic
+Remove Document
+
+auth caching time to live system
+Link to google auth
+
+
+API
+- Get Topic
+	
+	Description: Get topic data
+
+	Method: GET
+	Endpoint: /getTopic
+	Cookie: session-id
+	respond: [
+  		{
+    		"TopicName": "<Topic1Name>",
+    		"FieldColor": "<Topic1FieldColor>",
+    		"posX": "<Topic1PosX>",
+    		"posY": "<Topic1PoxY>"
+  		},...
+  		{
+    		"TopicName": "<Topic#nName>",
+    		"FieldColor": "<Topic#nFieldColor>",
+    		"posX": "<Topic#nPosX>",
+    		"posY": "<Topic#nPoxY>"
+  		}
+		]
+
+
+- Get all Document in Topic
+	
+	Description: Get document name from topic name
+	Endpoint: /getDocID/<topic>
+	Cookie: session-id
+	respond: ["<docID#1>","<docID#n>"]
+
+
+- Get Document data
+
+	Description: Fetch document data from document's name
+
+	Method: GET
+	Endpoint: /getDocData/<docID>
+	Cookie: session-id
+	respond: {
+		"Document name": "<DocName>"
+		"Content": "<content>",
+		"Download Count": "<Download count>",
+		}
+
+
+- Download file
+
+	Description: Download document from document's id
+
+	Method: GET
+	Endpoint: /getDoc/<docID>
+	Cookie: session-id
+	respond: <Document>
+
+- Upload file
+
+	Description: Upload Document
+
+	Method: POST
+	Endpoint: /postDocData/
+
+	Payload : <metadata.json>,<payload.txt>
+	Cookie: session-id
+	
+	respond: Uploaded
+
+
+
+
