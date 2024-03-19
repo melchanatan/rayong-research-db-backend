@@ -44,8 +44,10 @@ def SearchDocument():
 
     payload = []
 
-    for iterPayload in topicCollection.find({},{"_id" : 0, "name" : 1, "tagColor" : 1, "researchCounts": 1, "docIds": [] }):
-        payload.append(str(iterPayload))
+    for iterPayload in topicCollection.find({},{"_id" : 0, "name" : 1, "tagColor" : 1, "docIDs" : 1}):
+        docCount = len(iterPayload["docIDs"])
+        if docCount > 0:
+            payload.append(str({"name": iterPayload["name"], "tagColor": iterPayload["tagColor"], "researchCounts": docCount}))
     
     payload = "["+",".join(payload)+"]"
 
@@ -63,7 +65,7 @@ def GetDocumentSample(topic):
     db = dbServer['webDataBase']
     topicCollection = db['Topic']
 
-    payload = topicCollection.find_one({"TopicName": topic},{"_id" : 0, "DocID" : 1})
+    payload = topicCollection.find_one({"name": topic},{"_id" : 0, "docIDs" : 1})
 
     
     return str(payload).replace("'",'"')
@@ -175,7 +177,7 @@ def uploadDocument():
     # Find topic
 
     for Top in docTopic:
-        if TopicCollection.find_one({"TopicName": Top}) is None:
+        if TopicCollection.find_one({"name": Top}) is None:
             return Top + " topic doesn't exist in the database."
 
     # Turn metadata into document for mongodb
@@ -185,7 +187,7 @@ def uploadDocument():
     
     # Update Topic database
     for Top in docTopic:
-        TopicCollection.update_one({"TopicName": Top},{"$push":{"DocID":ObjectId(docid.inserted_id)}})
+        TopicCollection.update_one({"name": Top},{"$push":{"docIDs":ObjectId(docid.inserted_id)}})
     
     files[0].save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(documentFile)))
 

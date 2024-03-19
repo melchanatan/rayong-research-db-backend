@@ -26,9 +26,9 @@ print(x.inserted_ids)
 docId = x.inserted_ids
 
 topicDatabase = [
-    {"name": "Physicist", "tagColor": "#D95030", "docIds": [docId[0],docId[1]]},
-    {"name": "Chemist","tagColor": "#354D73", "docIds": [docId[2],docId[3]]},
-    {"name": "Lecturer","tagColor": "#6D3F5B", "docIds": [docId[2],docId[4]]}
+    {"name": "Physicist", "tagColor": "#D95030", "docIDs": [docId[0],docId[1]]},
+    {"name": "Chemist","tagColor": "#354D73", "docIDs": [docId[2],docId[3]]},
+    {"name": "Lecturer","tagColor": "#6D3F5B", "docIDs": [docId[2],docId[4]]}
 ]
 
 TopicCollection = db["Topic"]
