@@ -10,7 +10,7 @@ import time
 
 
 #Database setup
-databaseIP = "172.0.0.1"
+databaseIP = "localhost"
 databasePort = 27017
 
 archiveDirectory = 'DocArchive' + '/'
@@ -44,7 +44,7 @@ def SearchDocument():
 
     payload = []
 
-    for iterPayload in topicCollection.find({},{"_id" : 0, "TopicName" : 1, "FieldColor" : 1, "posX" : 1, "posY" : 1, "DocCount" : 1}):
+    for iterPayload in topicCollection.find({},{"_id" : 0, "name" : 1, "tagColor" : 1,  "docCount" : 1}):
         payload.append(str(iterPayload))
     
     payload = "["+",".join(payload)+"]"
@@ -69,7 +69,7 @@ def GetDocumentSample(topic):
     topic = topic.split('&')
     for t in topic:
         
-        payload.append(topicCollection.find_one({"TopicName": t},{"_id" : 0, "TopicName" : 1 ,"DocID" : 1}))
+        payload.append(topicCollection.find_one({"name": t},{"_id" : 0, "name" : 1 ,"DocID" : 1}))
     
     
     return str(payload).replace("'",'"')
@@ -185,7 +185,7 @@ def uploadDocument():
     # Find topic
     uniqueTopic = []
     for Top in docTopic:
-        if TopicCollection.find_one({"TopicName": Top}) is None:
+        if TopicCollection.find_one({"name": Top}) is None:
             return Top + " topic doesn't exist in the database."
         if Top in uniqueTopic:
             return "Topic name repeated"
@@ -198,8 +198,8 @@ def uploadDocument():
     
     # Update Topic database
     for Top in docTopic:
-        TopicCollection.update_one({"TopicName": Top},{"$push":{"DocID":ObjectId(docid.inserted_id)}})
-        TopicCollection.update_one({"TopicName": Top},{'$inc': {'DocCount': 1}})
+        TopicCollection.update_one({"name": Top},{"$push":{"DocID":ObjectId(docid.inserted_id)}})
+        TopicCollection.update_one({"name": Top},{'$inc': {'DocCount': 1}})
     
     files[0].save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(documentFile)))
 
@@ -234,7 +234,7 @@ def addTopic():
     if (content_type == 'application/json'):
         json = request.json
         try:
-            payload = {"TopicName" : str(json["TopicName"]), "FieldColor" : str(json["FieldColor"]), "PosX" : int(json["PosX"]), "PosY" : int(json["PosY"]), "DocCount" : 0, "DocID" : []}
+            payload = {"name" : str(json["name"]), "tagColor" : str(json["tagColor"]), "PosX" : int(json["PosX"]), "PosY" : int(json["PosY"]), "DocCount" : 0, "DocID" : []}
             
             dbServer = pymongo.MongoClient(str(databaseIP),int(databasePort))
             db = dbServer['webDataBase']
@@ -261,7 +261,7 @@ def removeTopic(top):
     db = dbServer['webDataBase']
     TopicCollection = db['Topic']
 
-    x = TopicCollection.delete_one({"TopicName" : top})
+    x = TopicCollection.delete_one({"name" : top})
     
     if x.deleted_count < 1:
         return "Topic not in database"

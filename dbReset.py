@@ -3,10 +3,11 @@
 import pymongo
 from bson.objectid import ObjectId
 
-dbIp = "192.168.0.52"
+dbIp = "localhost"
 
 dbServer = pymongo.MongoClient(dbIp,27017)
 dbServer.drop_database("webDataBase")
+print(dbServer)
 
 db = dbServer["webDataBase"]
 DocCollection = db["Doc"]
@@ -25,9 +26,9 @@ print(x.inserted_ids)
 docId = x.inserted_ids
 
 topicDatabase = [
-    {"TopicName": "Physicist", "FieldColor": "Red", "posX": 0, "posY": 1, "DocID": [docId[0],docId[1]]},
-    {"TopicName": "Chemist","FieldColor": "Green","posX": 10,"posY": 11,"DocID": [docId[2],docId[3]]},
-    {"TopicName": "Lecturer","FieldColor": "Blue","posX": 20,"posY": 21,"DocID": [docId[2],docId[4]]}
+    {"name": "Physicist", "tagColor": "Red", "docIDs": [docId[0],docId[1]]},
+    {"name": "Chemist","tagColor": "Green","docIDs": [docId[2],docId[3]]},
+    {"name": "Lecturer","tagColor": "Blue","docIDs": [docId[2],docId[4]]}
 ]
 
 TopicCollection = db["Topic"]
