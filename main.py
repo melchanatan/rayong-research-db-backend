@@ -66,9 +66,13 @@ def GetDocumentSample(topic):
     topicCollection = db['Topic']
 
     payload = topicCollection.find_one({"name": topic},{"_id" : 0, "docIDs" : 1})
-
+    for (i, e) in enumerate(payload["docIDs"]):
+        payload["docIDs"][i] = str(e)
     
     return str(payload).replace("'",'"')
+    
+
+    
     
 
 
