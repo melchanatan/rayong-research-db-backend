@@ -149,7 +149,7 @@ def uploadDocument():
         research_email = metadata_data['contactEmail']
         research_researchers = metadata_data['researchers']
         # research_topic = metadata_data['topic']
-        research_topic = "Chemist"    
+        research_topic = "Chemi31st"    
         print("err 1")
 
 
@@ -187,8 +187,18 @@ def uploadDocument():
 
   
     # Update Topic database
-    TopicCollection.update_one({"name": research_topic},{"$push":{"docIDs":ObjectId(docid.inserted_id)}})
-    TopicCollection.update_one({"name": research_topic},{'$inc': {'docCount': 1}})
+    TopicCollection.update_one(
+        {"name": research_topic},
+        {"$push":{"docIDs":ObjectId(docid.inserted_id)}},
+        upsert=True)
+    TopicCollection.update_one(
+        {"name": research_topic},
+        {"$setOnInsert": {"tagColor": "#dddddd"}},
+        upsert=True)
+    TopicCollection.update_one(
+        {"name": research_topic},
+        {'$inc': {'docCount': 1}}
+    )
     
     documents[0].save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(documentFile)))
 
