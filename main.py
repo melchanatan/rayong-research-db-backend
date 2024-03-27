@@ -10,7 +10,7 @@ import time
 
 
 #Database setup
-databaseIP = "172.17.0.4"
+databaseIP = "172.0.0.1"
 databasePort = 27017
 
 archiveDirectory = 'DocArchive' + '/'
