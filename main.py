@@ -1,4 +1,5 @@
 #!/bin/python3
+import datetime
 import os
 from flask import Flask, abort, jsonify, make_response, request
 from flask import send_file
@@ -14,13 +15,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 archiveDirectory = 'DocArchive' + '/'
 
 allowedFileExtension = ['xlsx','pdf','docx', 'csv']
 
 app = Flask(__name__)
-cors = CORS(app)
+cors = CORS(app, support_credentials=True)
 
 app.config['MAX_CONTENT_LENGTH'] = 512 * 1024 * 1024 
 app.config['UPLOAD_FOLDER'] = archiveDirectory
@@ -109,9 +109,10 @@ def uploadDocument():
     
     # print(json_data.get('metadata')) 
     # Get files from POST request, metadata.json and document
-    documents = request.files.getlist('csvFile')
+    documents = request.files.getlist('files')
     metadata = request.files.getlist('metadata')
     
+    print(documents)
     # Find metadata.json, isolate and save it
     if metadata is None:
         print("1")
@@ -121,19 +122,27 @@ def uploadDocument():
     metadata_data = json.loads(metadata_data)
     
 
+    for (index, document) in enumerate(documents):
+
+        # Check document file extension
+        documentFile = documents[index].filename.split('.')[0]
+        documentExtension = documents[index].filename.split('.')[-1]
+        if not documentExtension in allowedFileExtension:
+            print(documentExtension)
+            abort(400)
         
-    # Check document file extension
-    documentFile = documents[0].filename.split('.')[0]
-    documentExtension = documents[0].filename.split('.')[-1]
-    if not documentExtension in allowedFileExtension:
-        print("3")
-        abort(400)
-        
-    # Avoid filename confict by adding epoch
-    documentFile = documentFile + str(int(time.time())) + '.' + documentExtension
+        # Get the current timestamp
+        current_timestamp = int(time.time())
+
+        # Convert timestamp to datetime object
+        dt = datetime.datetime.fromtimestamp(current_timestamp)
+
+        # Get the date as a string
+        date_str = dt.strftime("_%Y-%m-%d")
+        # Avoid filename confict by adding epoch
+        documentFile = documentFile + date_str + '.' + documentExtension
 
 
-    print(metadata_data)
     # Parse .json file to mongodb
     try:
         research_header = metadata_data['header']
@@ -177,7 +186,9 @@ def uploadDocument():
         {'$inc': {'docCount': 1}}
     )
     
-    documents[0].save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(documentFile)))
+    for (index, document) in enumerate(documents):
+        print(documents[index])
+        documents[index].save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(documentFile)))
 
     return "Uploaded"
 
