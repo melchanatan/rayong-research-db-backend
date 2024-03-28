@@ -5,6 +5,7 @@ from flask import Flask, abort, jsonify, make_response, request
 from flask import send_file
 from flask_cors import CORS, cross_origin
 from pymongo.server_api import ServerApi
+import colorsys
 
 from bson.objectid import ObjectId
 from werkzeug.utils import secure_filename
@@ -54,6 +55,33 @@ def SearchDocument():
 
     return payload.replace("'",'"')
 
+@app.route("/getDocsSnippet/<topic>", methods = ['GET'])
+def GetDocumentSnippet(topic):
+    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
+    db = dbServer['webDataBase']
+    documentCollection = db['Doc']
+    topicCollection = db['Topic']
+    
+    allDocsId = topicCollection.find_one({"name": topic},{"_id" : 0, "docIDs" : 1})
+    
+    if allDocsId is None or len(allDocsId["docIDs"]) <= 0:
+        return bad_request("Topic not found")
+    
+    for (i, e) in enumerate(allDocsId["docIDs"]):
+        allDocsId["docIDs"][i] = str(e)
+         
+    payload = []
+    for (i, e) in enumerate(allDocsId["docIDs"]):
+        document = documentCollection.find_one({"_id": ObjectId(e)},{"_id" : 0, "header" : 1, "abstract" : 1, "organization" : 1})
+        document["id"] = allDocsId["docIDs"][i]
+        payload.append(document)
+
+    return payload
+    
+    
+
+        
+
 @app.route("/getDocID/<topic>", methods = ['GET'])
 def GetDocumentSample(topic):
 
@@ -75,24 +103,29 @@ def GetDocumentData(docID):
     documentCollection = db['Doc']
     
     docID = ObjectId(docID)
-    payload = documentCollection.find_one({"_id": docID},{"_id" : 0, "DocName" : 1, "Content" : 1, "DownloadCount" : 1})
+    payload = documentCollection.find_one({"_id": docID},{"_id" : 0, "header" : 1, "abstract" : 1, "downloadCount" : 1, "files": 1, "contactEmail": 1, "date": 1, "organization" : 1, "researchers": 1})
     
     return str(payload).replace("'",'"')
 
 
 
-@app.route("/getDoc/<docID>", methods = ['GET'])
-def downloadDocument(docID):
+@app.route("/downloadDoc/<docID>/<index>", methods = ['GET'])
+def downloadDocument(docID, index):
 
     dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
     db = dbServer['webDataBase']
     documentCollection = db['Doc']
 
     try:
+        index = int(index)
+        if index < 0:
+            abort(400)
+
         docID = ObjectId(docID)
-        path = documentCollection.find_one({"_id": docID},{"_id":0, "Link":1})
-        path = path["Link"]
-         
+        path = documentCollection.find_one({"_id": docID},{"_id":0, "files":1})
+        print(path)
+        path = path["files"][index]
+
         print(archiveDirectory + str(path))
     except:
         abort(400)
@@ -115,32 +148,33 @@ def uploadDocument():
     print(documents)
     # Find metadata.json, isolate and save it
     if metadata is None:
-        print("1")
         return bad_request("Request must contain metadata.json and document")
 
     metadata_data = metadata[0].read().decode('utf-8')
     metadata_data = json.loads(metadata_data)
     
 
+    # Get the current timestamp
+    current_timestamp = int(time.time())
+
+    # Convert timestamp to datetime object
+    dt = datetime.datetime.fromtimestamp(current_timestamp)
+
+    # Get the date as a string
+    date_str = dt.strftime("_%Y-%m-%d")
+    
+    documentFiles = []
     for (index, document) in enumerate(documents):
 
         # Check document file extension
-        documentFile = documents[index].filename.split('.')[0]
+        file_buffer = documents[index].filename.split('.')[0]
         documentExtension = documents[index].filename.split('.')[-1]
         if not documentExtension in allowedFileExtension:
             print(documentExtension)
             abort(400)
         
-        # Get the current timestamp
-        current_timestamp = int(time.time())
-
-        # Convert timestamp to datetime object
-        dt = datetime.datetime.fromtimestamp(current_timestamp)
-
-        # Get the date as a string
-        date_str = dt.strftime("_%Y-%m-%d")
         # Avoid filename confict by adding epoch
-        documentFile = documentFile + date_str + '.' + documentExtension
+        documentFiles.append(file_buffer + date_str + '.' + documentExtension)
 
 
     # Parse .json file to mongodb
@@ -152,8 +186,6 @@ def uploadDocument():
         research_researchers = metadata_data.get('researchers', "")
         research_topic = metadata_data['tag']
     except KeyError:
-        print("err 12")
-
         abort(400)
 
     # Connect to database
@@ -161,26 +193,22 @@ def uploadDocument():
     db = dbServer['webDataBase']
     DocumentCollection = db['Doc']
     TopicCollection = db['Topic']
-    print("err 2")
 
     # Turn metadata into document for mongodb
-    payloadToDB = {"header" : research_header, "researchers" : research_researchers, "organization" : research_organization, "contactEmail" : research_email, "date" : time.asctime(time.gmtime()), "abstract" : research_abstract, "downloadCount": 0, "files": documentFile}
+    payloadToDB = {"header" : research_header, "researchers" : research_researchers, "organization" : research_organization, "contactEmail" : research_email, "date" : time.asctime(time.gmtime()), "abstract" : research_abstract, "downloadCount": 0, "files": documentFiles}
     
     docid = DocumentCollection.insert_one(payloadToDB)
-    print(docid.inserted_id) 
-    print("err 4")
 
-
-  
-    # Update Topic database
+      # Update Topic database
+    TopicCollection.update_one(
+        {"name": research_topic},
+        {"$setOnInsert": {"tagColor": generate_pleasing_color()}},
+        upsert=True
+    )
     TopicCollection.update_one(
         {"name": research_topic},
         {"$push":{"docIDs":ObjectId(docid.inserted_id)}},
-        upsert=True)
-    # TopicCollection.update_one(
-    #     {"name": research_topic},
-    #     {"$setOnInsert": {"tagColor": "#dddddd"}},
-    #     upsert=True)
+    )
     TopicCollection.update_one(
         {"name": research_topic},
         {'$inc': {'docCount': 1}}
@@ -188,10 +216,11 @@ def uploadDocument():
     
     for (index, document) in enumerate(documents):
         print(documents[index])
-        documents[index].save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(documentFile)))
+        print(documentFiles[index])
+
+        documents[index].save(os.path.join(app.config['UPLOAD_FOLDER'], documentFiles[index]))
 
     return "Uploaded"
-
 
 
 @app.route("/addTopic", methods = ['POST'])
@@ -219,7 +248,7 @@ def addTopic():
 @app.route("/delDoc/<docID>", methods = ['GET'])
 def deleteDocument(docID):
     
-    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI'),int(databasePort)))
+    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
     db = dbServer['webDataBase']
     TopicCollection = db['Topic']
     DocCollection = db['Doc']
@@ -238,6 +267,18 @@ def deleteDocument(docID):
     return "Document deleted"
 
 
+@app.route("/getTopicColor/<topic>", methods = ['GET'])
+def getTopicColor(topic):
+    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
+    db = dbServer['webDataBase']
+    TopicCollection = db['Topic']
+    topic = TopicCollection.find_one({"name": topic},{"_id":0, "tagColor":1})
+    print(topic)
+    
+    if topic is None:
+        abort("Topic not found")
+    return topic
+
 
 @app.route("/editDB", methods = ['POST'])
 def editDatabase():
@@ -255,6 +296,24 @@ def logoutCredential():
     respondPayload = make_response("logout")
     respondPayload.set_cookie("auth-id", "", max_age=0)
     return respondPayload
+
+def generate_pleasing_color():
+    """Generate a pleasing color using the HSL color model."""
+    # Choose a hue value between 0 and 1
+    hue = 0.6  # Red-orange colors (adjust as desired)
+
+    # Choose a saturation value between 0 and 1
+    saturation = 0.8  # High saturation (adjust as desired)
+
+    # Choose a lightness value between 0 and 1
+    lightness = 0.5  # Medium lightness (adjust as desired)
+
+    # Convert HSL to RGB
+    rgb = colorsys.hls_to_rgb(hue, lightness, saturation)
+
+    # Convert RGB values to integers between 0 and 255
+    r, g, b = [int(x * 255) for x in rgb]
+    return '#{:02x}{:02x}{:02x}'.format(r, g, b)
 
 
 
