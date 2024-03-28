@@ -67,12 +67,6 @@ def GetDocumentSample(topic):
     
     return str(payload).replace("'",'"')
     
-
-    
-    
-
-
-
 @app.route("/getDocData/<docID>", methods = ['GET'])
 def GetDocumentData(docID):
     
@@ -142,19 +136,16 @@ def uploadDocument():
     print(metadata_data)
     # Parse .json file to mongodb
     try:
-        
         research_header = metadata_data['header']
         research_abstract = metadata_data['abstract']
-        research_organization = metadata_data['organization']
-        research_email = metadata_data['contactEmail']
-        research_researchers = metadata_data['researchers']
-        # research_topic = metadata_data['topic']
-        research_topic = "Chemi31st"    
-        print("err 1")
+        research_organization = metadata_data.get('organization', "")
+        research_email = metadata_data.get('contactEmail', "")
+        research_researchers = metadata_data.get('researchers', "")
+        research_topic = metadata_data['tag']
+    except KeyError:
+        print("err 12")
 
-
-    except:
-        return "Bad metadata file"
+        abort(400)
 
     # Connect to database
     dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
@@ -170,20 +161,6 @@ def uploadDocument():
     print(docid.inserted_id) 
     print("err 4")
 
-    
-    # # Find topic
-    # uniqueTopic = []
-    # if research_topic != "":
-    #     for Top in research_topic:
-    #         if TopicCollection.find_one({"name": Top}) is None:
-    #             return Top + " topic doesn't exist in the database."
-    #         if Top in uniqueTopic:
-    #             return "Topic name repeated"
-    #         uniqueTopic.append(Top)
-    # else:
-    #     research_topic = "อื่นๆ"
-
-    
 
   
     # Update Topic database
@@ -191,10 +168,10 @@ def uploadDocument():
         {"name": research_topic},
         {"$push":{"docIDs":ObjectId(docid.inserted_id)}},
         upsert=True)
-    TopicCollection.update_one(
-        {"name": research_topic},
-        {"$setOnInsert": {"tagColor": "#dddddd"}},
-        upsert=True)
+    # TopicCollection.update_one(
+    #     {"name": research_topic},
+    #     {"$setOnInsert": {"tagColor": "#dddddd"}},
+    #     upsert=True)
     TopicCollection.update_one(
         {"name": research_topic},
         {'$inc': {'docCount': 1}}
