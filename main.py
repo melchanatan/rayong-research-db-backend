@@ -1,6 +1,7 @@
 #!/bin/python3
 import datetime
 import os
+import random
 from flask import Flask, abort, jsonify, make_response, request
 from flask import send_file
 from flask_cors import CORS, cross_origin
@@ -73,15 +74,13 @@ def GetDocumentSnippet(topic):
     payload = []
     for (i, e) in enumerate(allDocsId["docIDs"]):
         document = documentCollection.find_one({"_id": ObjectId(e)},{"_id" : 0, "header" : 1, "abstract" : 1, "organization" : 1})
+        if document is None:
+            continue
         document["id"] = allDocsId["docIDs"][i]
         payload.append(document)
 
     return payload
     
-    
-
-        
-
 @app.route("/getDocID/<topic>", methods = ['GET'])
 def GetDocumentSample(topic):
 
@@ -195,7 +194,7 @@ def uploadDocument():
     TopicCollection = db['Topic']
 
     # Turn metadata into document for mongodb
-    payloadToDB = {"header" : research_header, "researchers" : research_researchers, "organization" : research_organization, "contactEmail" : research_email, "date" : time.asctime(time.gmtime()), "abstract" : research_abstract, "downloadCount": 0, "files": documentFiles}
+    payloadToDB = {"header" : research_header, "researchers" : research_researchers, "organization" : research_organization, "contactEmail" : research_email, "date" : time.asctime(time.gmtime()), "abstract" : research_abstract, "downloadCount": 0, "files": documentFiles, "tag": research_topic}
     
     docid = DocumentCollection.insert_one(payloadToDB)
 
@@ -253,16 +252,19 @@ def deleteDocument(docID):
     TopicCollection = db['Topic']
     DocCollection = db['Doc']
 
-    path = DocCollection.find_one({"_id":ObjectId(docID)},{"_id":0, "Link":1}) 
+    path = DocCollection.find_one({"_id":ObjectId(docID)},{"_id":0, "files":1, "tag":1}) 
 
-    TopicCollection.update_many({"DocID": ObjectId(docID)},{"$inc" : {"DocCount":-1}})
-    TopicCollection.update_many({"DocID": ObjectId(docID)},{"$pull" : {"DocID" : ObjectId(docID)}})
+    print(path)
+    TopicCollection.update_one({"name": path["tag"]},{"$inc" : {"docCount":-1}})
+    TopicCollection.update_one({"name": path["tag"]},{"$pull" : {"docIDs" : ObjectId(docID)}})
 
     DocCollection.delete_one({"_id" : ObjectId(docID)})
 
-
-    os.remove(os.path.join(archiveDirectory, str(path["Link"])))
-
+    for (index, files) in enumerate(path["files"]):
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], str(files)))
+        except:
+            abort("File not found")
 
     return "Document deleted"
 
@@ -299,15 +301,13 @@ def logoutCredential():
 
 def generate_pleasing_color():
     """Generate a pleasing color using the HSL color model."""
-    # Choose a hue value between 0 and 1
-    hue = 0.6  # Red-orange colors (adjust as desired)
+    hue = random.random()
 
-    # Choose a saturation value between 0 and 1
-    saturation = 0.8  # High saturation (adjust as desired)
+    # Choose a random saturation value between 0.5 and 0.9 (moderately high to high saturation)
+    saturation = random.uniform(0.5, 0.9)
 
-    # Choose a lightness value between 0 and 1
-    lightness = 0.5  # Medium lightness (adjust as desired)
-
+    # Choose a random lightness value between 0.3 and 0.7 (moderately low to moderately high lightness)
+    lightness = random.uniform(0.3, 0.7)
     # Convert HSL to RGB
     rgb = colorsys.hls_to_rgb(hue, lightness, saturation)
 
