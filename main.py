@@ -254,11 +254,11 @@ def deleteDocument(docID):
 
     path = DocCollection.find_one({"_id":ObjectId(docID)},{"_id":0, "files":1, "tag":1}) 
 
-    print(path)
     TopicCollection.update_one({"name": path["tag"]},{"$inc" : {"docCount":-1}})
     TopicCollection.update_one({"name": path["tag"]},{"$pull" : {"docIDs" : ObjectId(docID)}})
 
     DocCollection.delete_one({"_id" : ObjectId(docID)})
+    TopicCollection.delete_many({"docCount":0})
 
     for (index, files) in enumerate(path["files"]):
         try:
