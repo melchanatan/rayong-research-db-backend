@@ -39,7 +39,6 @@ def ping():
 
 @app.route("/getTopic", methods = ['GET'])
 def SearchDocument():
-    
 
     dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
     db = dbServer['webDataBase']
@@ -73,7 +72,7 @@ def GetDocumentSnippet(topic):
          
     payload = []
     for (i, e) in enumerate(allDocsId["docIDs"]):
-        document = documentCollection.find_one({"_id": ObjectId(e)},{"_id" : 0, "header" : 1, "abstract" : 1, "organization" : 1})
+        document = documentCollection.find_one({"_id": ObjectId(e)},{"_id" : 0, "header" : 1, "abstract" : 1, "organization" : 1, "date": 1})
         if document is None:
             continue
         document["id"] = allDocsId["docIDs"][i]
