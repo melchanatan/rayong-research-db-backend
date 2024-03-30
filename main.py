@@ -21,10 +21,10 @@ allowedFileExtension = ['xlsx','pdf','docx', 'csv']
 
 app = Flask(__name__)
 cors = CORS(app, support_credentials=True)
-
 app.config['MAX_CONTENT_LENGTH'] = 512 * 1024 * 1024 
 app.config['UPLOAD_FOLDER'] = str(os.getenv('ARCHIVE_DIRECTORY'))
 
+print(os.path.join(os.path.abspath(os.sep), app.config['UPLOAD_FOLDER'],"ues"))
 def bad_request(message):
     response = jsonify({'message': message})
     response.status_code = 400
@@ -221,7 +221,7 @@ def uploadDocument():
         print(documentFiles[index])
         
         try:
-            documents[index].save("/", app.config['UPLOAD_FOLDER'], documentFiles[index])
+            documents[index].save(os.path.join(os.path.abspath(os.sep), app.config['UPLOAD_FOLDER'], documentFiles[index]))
         except Exception as err:
             print(err)
 
