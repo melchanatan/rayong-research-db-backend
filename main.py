@@ -221,7 +221,7 @@ def uploadDocument():
         print(documentFiles[index])
         
         try:
-            documents[index].save(os.path.join(os.path.abspath(os.sep), app.config['UPLOAD_FOLDER'], documentFiles[index]))
+            documents[index].save(os.path.join(app.config['UPLOAD_FOLDER'], documentFiles[index]))
         except Exception as err:
             print(err)
 
