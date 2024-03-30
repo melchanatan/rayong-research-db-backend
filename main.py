@@ -122,14 +122,15 @@ def downloadDocument(docID, index):
         print(path)
         path = path["files"][index]
 
-        print(archiveDirectory + str(path))
-    except:
+        print(os.path.join(app.config['UPLOAD_FOLDER'], str(path)))
+    except Exception as e:
+        print(os.path.join(app.config['UPLOAD_FOLDER'], str(path)))
+        print(e)
         abort(400)
 
     documentCollection.update_one({"_id":docID},{"$inc":{"DownloadCount":1}})
 
-
-    return send_file(archiveDirectory + str(path), as_attachment=True)
+    return send_file(os.path.join(app.config['UPLOAD_FOLDER'], str(path)), as_attachment=True)
 
 
 
