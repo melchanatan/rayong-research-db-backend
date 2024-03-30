@@ -17,7 +17,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 allowedFileExtension = ['xlsx','pdf','docx', 'csv']
 
 app = Flask(__name__)
@@ -221,7 +220,7 @@ def uploadDocument():
         print(documents[index])
         print(documentFiles[index])
 
-        documents[index].save(os.path.join(os.path.abspath(os.sep), app.config['UPLOAD_FOLDER'], documentFiles[index]))
+        documents[index].save("/", app.config['UPLOAD_FOLDER'], documentFiles[index]))
 
     return "Uploaded"
 
