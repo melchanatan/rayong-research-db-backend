@@ -219,8 +219,11 @@ def uploadDocument():
     for (index, document) in enumerate(documents):
         print(documents[index])
         print(documentFiles[index])
-
-        documents[index].save("/", app.config['UPLOAD_FOLDER'], documentFiles[index])
+        
+        try:
+            documents[index].save("/", app.config['UPLOAD_FOLDER'], documentFiles[index])
+        except Exception as err:
+            print(err)
 
     return "Uploaded"
 
