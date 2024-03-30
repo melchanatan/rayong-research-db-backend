@@ -173,7 +173,7 @@ def uploadDocument():
         # Avoid filename confict by adding epoch
         documentFiles.append(file_buffer + date_str + '.' + documentExtension)
 
-
+    print("pass check document file")
     # Parse .json file to mongodb
     try:
         research_header = metadata_data['header']
@@ -211,11 +211,17 @@ def uploadDocument():
         {'$inc': {'docCount': 1}}
     )
     
+    print("pass update topic database")
+
+    print(str(os.path.join(app.config['UPLOAD_FOLDER'])))
+    print(str(os.path.abspath(os.sep)))
+    print(str(os.path.join(os.path.abspath(os.sep), app.config['UPLOAD_FOLDER'], documentFiles[index])))
+
     for (index, document) in enumerate(documents):
         print(documents[index])
         print(documentFiles[index])
 
-        documents[index].save(os.path.join(app.config['UPLOAD_FOLDER'], documentFiles[index]))
+        documents[index].save(os.path.join(os.path.abspath(os.sep), app.config['UPLOAD_FOLDER'], documentFiles[index]))
 
     return "Uploaded"
 
