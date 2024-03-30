@@ -17,7 +17,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-archiveDirectory = 'DocArchive' + '/'
 
 allowedFileExtension = ['xlsx','pdf','docx', 'csv']
 
@@ -25,7 +24,7 @@ app = Flask(__name__)
 cors = CORS(app, support_credentials=True)
 
 app.config['MAX_CONTENT_LENGTH'] = 512 * 1024 * 1024 
-app.config['UPLOAD_FOLDER'] = archiveDirectory
+app.config['UPLOAD_FOLDER'] = str(os.getenv('ARCHIVE_DIRECTORY'))
 
 def bad_request(message):
     response = jsonify({'message': message})
