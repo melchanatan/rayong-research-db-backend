@@ -220,7 +220,7 @@ def uploadDocument():
         print(documents[index])
         print(documentFiles[index])
 
-        documents[index].save("/", app.config['UPLOAD_FOLDER'], documentFiles[index]))
+        documents[index].save("/", app.config['UPLOAD_FOLDER'], documentFiles[index])
 
     return "Uploaded"
 
