@@ -190,7 +190,7 @@ def editDocument(docID):
         header = {}
         header['Access-Control-Allow-Origin'] = '*'
         if result.modified_count == 1:
-            return jsonify({'message': 'User updated successfully', 'header': header}), 200
+            return jsonify({'message': 'User updated successfully', 'headers': header}), 200
         else:
             return jsonify({'message': 'User not found'}), 404
     return abort(400)
