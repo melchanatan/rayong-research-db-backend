@@ -2,7 +2,7 @@
 import datetime
 import os
 import random
-from flask import Blueprint, Flask, abort, jsonify, make_response, request
+from flask import Blueprint, Flask, abort, jsonify, make_response, request, Response
 from flask import send_file
 from flask_cors import CORS, cross_origin
 from pymongo.server_api import ServerApi
@@ -22,7 +22,7 @@ allowedFileExtension = ['xlsx', 'pdf', 'docx', 'csv']
 app = Flask(__name__)
 blueprint = Blueprint('blueprint', __name__)
 
-cors = CORS(app, support_credentials=True,)
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
 app.config['MAX_CONTENT_LENGTH'] = 512 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = str(os.getenv('ARCHIVE_DIRECTORY'))
 
@@ -164,8 +164,14 @@ def downloadDocument(docID, index):
     return send_file(os.path.join(app.config['UPLOAD_FOLDER'], str(path)), as_attachment=True)
 
 
-@blueprint.route("/editDoc/<docID>", methods=["POST"])
+@app.route("/editDoc/<docID>", methods=['POST'])
 def editDocument(docID):
+    resp = make_response("Foo bar baz")
+    resp.headers.add("Access-Control-Allow-Origin", "*")
+    resp.headers.add("Access-Control-Allow-Headers", "*")
+    resp.headers.add("Access-Control-Allow-Methods", "*")
+    resp.status = 200
+
     content_type = request.headers.get("Content-Type")
     print(content_type)
     json = {}
@@ -186,14 +192,14 @@ def editDocument(docID):
             {'$set': update_fields}
         )
 
-        print(result)
-        header = {}
-        header['Access-Control-Allow-Origin'] = '*'
         if result.modified_count == 1:
-            return jsonify({'message': 'User updated successfully', 'headers': header}), 200
+            # resp.message = 'User updated successfully'
+            return resp
+
         else:
-            return jsonify({'message': 'User not found'}), 404
-    return abort(400)
+            # resp.message = 'User not found'
+            return resp
+    return resp
 
 
 @app.route("/postDoc", methods=['POST'])
@@ -274,11 +280,8 @@ def uploadDocument():
     )
 
     print("pass update topic database")
-
-    print(str(os.path.join(app.config['UPLOAD_FOLDER'])))
-    print(str(os.path.abspath(os.sep)))
-    print(str(os.path.join(os.path.abspath(os.sep),
-          app.config['UPLOAD_FOLDER'], documentFiles[index])))
+    print("------Docuds=====")
+    print(documents)
 
     for (index, document) in enumerate(documents):
         print(documents[index])
