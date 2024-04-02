@@ -20,7 +20,7 @@ load_dotenv()
 allowedFileExtension = ['xlsx', 'pdf', 'docx', 'csv']
 
 app = Flask(__name__)
-cors = CORS(app, support_credentials=True)
+cors = CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 512 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = str(os.getenv('ARCHIVE_DIRECTORY'))
 
