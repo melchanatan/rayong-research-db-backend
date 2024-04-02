@@ -17,98 +17,117 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-allowedFileExtension = ['xlsx','pdf','docx', 'csv']
+allowedFileExtension = ['xlsx', 'pdf', 'docx', 'csv']
 
 app = Flask(__name__)
 cors = CORS(app, support_credentials=True)
-app.config['MAX_CONTENT_LENGTH'] = 512 * 1024 * 1024 
+app.config['MAX_CONTENT_LENGTH'] = 512 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = str(os.getenv('ARCHIVE_DIRECTORY'))
 
-print(os.path.join(os.path.abspath(os.sep), app.config['UPLOAD_FOLDER'],"ues"))
+print(os.path.join(os.path.abspath(os.sep),
+      app.config['UPLOAD_FOLDER'], "ues"))
+
+
 def bad_request(message):
     response = jsonify({'message': message})
     response.status_code = 400
     return response
+
 
 @app.route("/ping")
 def ping():
     return str(os.getenv('MONGO_DB_URI'))
 
 
-@app.route("/getTopic", methods = ['GET'])
+@app.route("/getTopic", methods=['GET'])
 def SearchDocument():
 
-    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
+    dbServer = pymongo.MongoClient(
+        str(os.getenv('MONGO_DB_URI')), server_api=ServerApi('1'))
     db = dbServer['webDataBase']
     topicCollection = db['Topic']
 
     payload = []
 
-    for iterPayload in topicCollection.find({},{"_id" : 0, "name" : 1, "tagColor" : 1, "docIDs" : 1}):
+    for iterPayload in topicCollection.find({}, {"_id": 0, "name": 1, "tagColor": 1, "docIDs": 1}):
         docCount = len(iterPayload["docIDs"])
         if docCount > 0:
-            payload.append(str({"name": iterPayload["name"], "tagColor": iterPayload["tagColor"], "researchCounts": docCount}))
-    
+            payload.append(str(
+                {"name": iterPayload["name"], "tagColor": iterPayload["tagColor"], "researchCounts": docCount}))
+
     payload = "["+",".join(payload)+"]"
 
-    return payload.replace("'",'"')
+    return payload.replace("'", '"')
 
-@app.route("/getDocsSnippet/<topic>", methods = ['GET'])
+
+@app.route("/getDocsSnippet/<topic>", methods=['GET'])
 def GetDocumentSnippet(topic):
-    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
+    dbServer = pymongo.MongoClient(
+        str(os.getenv('MONGO_DB_URI')), server_api=ServerApi('1'))
     db = dbServer['webDataBase']
     documentCollection = db['Doc']
     topicCollection = db['Topic']
-    
-    allDocsId = topicCollection.find_one({"name": topic},{"_id" : 0, "docIDs" : 1})
-    
+
+    allDocsId = topicCollection.find_one(
+        {"name": topic}, {"_id": 0, "docIDs": 1})
+
     if allDocsId is None or len(allDocsId["docIDs"]) <= 0:
         return bad_request("Topic not found")
-    
+
     for (i, e) in enumerate(allDocsId["docIDs"]):
         allDocsId["docIDs"][i] = str(e)
-         
+
     payload = []
     for (i, e) in enumerate(allDocsId["docIDs"]):
-        document = documentCollection.find_one({"_id": ObjectId(e)},{"_id" : 0, "header" : 1, "abstract" : 1, "organization" : 1, "date": 1})
+        document = documentCollection.find_one({"_id": ObjectId(
+            e)}, {"_id": 0, "header": 1, "abstract": 1, "organization": 1, "date": 1})
         if document is None:
             continue
         document["id"] = allDocsId["docIDs"][i]
         payload.append(document)
 
     return payload
-    
-@app.route("/getDocID/<topic>", methods = ['GET'])
+
+
+@app.route("/getDocID/<topic>", methods=['GET'])
 def GetDocumentSample(topic):
 
-    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
+    dbServer = pymongo.MongoClient(
+        str(os.getenv('MONGO_DB_URI')), server_api=ServerApi('1'))
     db = dbServer['webDataBase']
     topicCollection = db['Topic']
 
-    payload = topicCollection.find_one({"name": topic},{"_id" : 0, "docIDs" : 1})
+    payload = topicCollection.find_one(
+        {"name": topic}, {"_id": 0, "docIDs": 1})
     for (i, e) in enumerate(payload["docIDs"]):
         payload["docIDs"][i] = str(e)
-    
-    return str(payload).replace("'",'"')
-    
-@app.route("/getDocData/<docID>", methods = ['GET'])
+
+    return str(payload).replace("'", '"')
+
+
+@app.route("/getDocData/<docID>", methods=['GET'])
 def GetDocumentData(docID):
-    
-    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
+
+    dbServer = pymongo.MongoClient(
+        str(os.getenv('MONGO_DB_URI')), server_api=ServerApi('1'))
     db = dbServer['webDataBase']
     documentCollection = db['Doc']
-    
+
     docID = ObjectId(docID)
-    payload = documentCollection.find_one({"_id": docID},{"_id" : 0, "header" : 1, "abstract" : 1, "downloadCount" : 1, "files": 1, "contactEmail": 1, "date": 1, "organization" : 1, "researchers": 1})
-    
-    return str(payload).replace("'",'"')
+    try:
+        payload = documentCollection.find_one({"_id": docID}, {"_id": 0, "header": 1, "abstract": 1,
+                                                               "downloadCount": 1, "files": 1, "contactEmail": 1, "date": 1, "organization": 1, "researchers": 1})
+    except:
+        abort(400)
+
+    return str(payload).replace("'", '"')
 
 
-
-@app.route("/downloadDoc/<docID>/<index>", methods = ['GET'])
+@app.route("/downloadDoc/<docID>/<index>", methods=['GET'])
 def downloadDocument(docID, index):
 
-    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
+    dbServer = pymongo.MongoClient(
+        str(os.getenv('MONGO_DB_URI')), server_api=ServerApi('1'))
     db = dbServer['webDataBase']
     documentCollection = db['Doc']
 
@@ -118,7 +137,8 @@ def downloadDocument(docID, index):
             abort(400)
 
         docID = ObjectId(docID)
-        path = documentCollection.find_one({"_id": docID},{"_id":0, "files":1})
+        path = documentCollection.find_one(
+            {"_id": docID}, {"_id": 0, "files": 1})
         print(path)
         path = path["files"][index]
 
@@ -128,36 +148,56 @@ def downloadDocument(docID, index):
         print(e)
         abort(400)
 
-    documentCollection.update_one({"_id":docID},{"$inc":{"DownloadCount":1}})
+    documentCollection.update_one(
+        {"_id": docID}, {"$inc": {"DownloadCount": 1}})
 
     return send_file(os.path.join(app.config['UPLOAD_FOLDER'], str(path)), as_attachment=True)
 
-@app.route("/editDoc/<docID>", method = ["PATCH"])
-def editDocument(docID):
-    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
-    db = dbServer['webDataBase']
-    documentCollection = db['Doc']
-    
-    currentDoc = documentCollection.query.get_or_404(docID)
-    print(currentDoc)
-    
-    
 
-@app.route("/postDoc", methods = ['POST'])
+@app.route("/editDoc/<docID>", methods=["POST"])
+def editDocument(docID):
+    content_type = request.headers.get("Content-Type")
+    print(content_type)
+    json = {}
+    if (content_type == 'application/json'):
+        json = request.json
+
+        print(json)
+        # Connect to database
+        dbServer = pymongo.MongoClient(
+            str(os.getenv('MONGO_DB_URI')), server_api=ServerApi('1'))
+        db = dbServer['webDataBase']
+        DocumentCollection = db['Doc']
+
+        update_fields = {field: value for field, value in json.items()}
+        print(docID)
+        result = DocumentCollection.update_one(
+            {'_id': ObjectId(docID)},
+            {'$set': update_fields}
+        )
+
+        print(result)
+        if result.modified_count == 1:
+            return jsonify({'message': 'User updated successfully'}), 200
+        else:
+            return jsonify({'message': 'User not found'}), 404
+    return abort(400)
+
+
+@app.route("/postDoc", methods=['POST'])
 def uploadDocument():
-    
-    # print(json_data.get('metadata')) 
+
+    # print(json_data.get('metadata'))
     # Get files from POST request, metadata.json and document
     documents = request.files.getlist('files')
     metadata = request.files.getlist('metadata')
-    
+
     # Find metadata.json, isolate and save it
     if metadata is None:
         return bad_request("Request must contain metadata.json and document")
 
     metadata_data = metadata[0].read().decode('utf-8')
     metadata_data = json.loads(metadata_data)
-    
 
     # Get the current timestamp
     current_timestamp = int(time.time())
@@ -167,7 +207,7 @@ def uploadDocument():
 
     # Get the date as a string
     date_str = dt.strftime("_%Y-%m-%d")
-    
+
     documentFiles = []
     for (index, document) in enumerate(documents):
 
@@ -177,7 +217,7 @@ def uploadDocument():
         if not documentExtension in allowedFileExtension:
             print(documentExtension)
             abort(400)
-        
+
         # Avoid filename confict by adding epoch
         documentFiles.append(file_buffer + date_str + '.' + documentExtension)
 
@@ -194,17 +234,19 @@ def uploadDocument():
         abort(400)
 
     # Connect to database
-    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
+    dbServer = pymongo.MongoClient(
+        str(os.getenv('MONGO_DB_URI')), server_api=ServerApi('1'))
     db = dbServer['webDataBase']
     DocumentCollection = db['Doc']
     TopicCollection = db['Topic']
 
     # Turn metadata into document for mongodb
-    payloadToDB = {"header" : research_header, "researchers" : research_researchers, "organization" : research_organization, "contactEmail" : research_email, "date" : time.asctime(time.gmtime()), "abstract" : research_abstract, "downloadCount": 0, "files": documentFiles, "tag": research_topic}
-    
+    payloadToDB = {"header": research_header, "researchers": research_researchers, "organization": research_organization, "contactEmail": research_email,
+                   "date": time.asctime(time.gmtime()), "abstract": research_abstract, "downloadCount": 0, "files": documentFiles, "tag": research_topic}
+
     docid = DocumentCollection.insert_one(payloadToDB)
 
-      # Update Topic database
+    # Update Topic database
     TopicCollection.update_one(
         {"name": research_topic},
         {"$setOnInsert": {"tagColor": generate_pleasing_color()}},
@@ -212,40 +254,44 @@ def uploadDocument():
     )
     TopicCollection.update_one(
         {"name": research_topic},
-        {"$push":{"docIDs":ObjectId(docid.inserted_id)}},
+        {"$push": {"docIDs": ObjectId(docid.inserted_id)}},
     )
     TopicCollection.update_one(
         {"name": research_topic},
         {'$inc': {'docCount': 1}}
     )
-    
+
     print("pass update topic database")
 
     print(str(os.path.join(app.config['UPLOAD_FOLDER'])))
     print(str(os.path.abspath(os.sep)))
-    print(str(os.path.join(os.path.abspath(os.sep), app.config['UPLOAD_FOLDER'], documentFiles[index])))
+    print(str(os.path.join(os.path.abspath(os.sep),
+          app.config['UPLOAD_FOLDER'], documentFiles[index])))
 
     for (index, document) in enumerate(documents):
         print(documents[index])
         print(documentFiles[index])
-        
+
         try:
-            documents[index].save(os.path.join(app.config['UPLOAD_FOLDER'], documentFiles[index]))
+            documents[index].save(os.path.join(
+                app.config['UPLOAD_FOLDER'], documentFiles[index]))
         except Exception as err:
             print(err)
 
     return "Uploaded"
 
 
-@app.route("/addTopic", methods = ['POST'])
+@app.route("/addTopic", methods=['POST'])
 def addTopic():
     content_type = request.headers.get("Content-Type")
     if (content_type == 'application/json'):
         json = request.json
         try:
-            payload = {"name" : str(json["name"]), "tagColor" : str(json["tagColor"]), "PosX" : int(json["PosX"]), "PosY" : int(json["PosY"]), "DocCount" : 0, "DocID" : []}
-            
-            dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI'),int(databasePort)))
+            payload = {"name": str(json["name"]), "tagColor": str(json["tagColor"]), "PosX": int(
+                json["PosX"]), "PosY": int(json["PosY"]), "DocCount": 0, "DocID": []}
+
+            dbServer = pymongo.MongoClient(
+                str(os.getenv('MONGO_DB_URI'), int(databasePort)))
             db = dbServer['webDataBase']
             TopicCollection = db['Topic']
 
@@ -254,26 +300,30 @@ def addTopic():
         except:
             return "Json doesn't contain the data"
 
-
         return json
     else:
         return "Content is not json"
 
-@app.route("/delDoc/<docID>", methods = ['GET'])
+
+@app.route("/delDoc/<docID>", methods=['GET'])
 def deleteDocument(docID):
-    
-    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
+
+    dbServer = pymongo.MongoClient(
+        str(os.getenv('MONGO_DB_URI')), server_api=ServerApi('1'))
     db = dbServer['webDataBase']
     TopicCollection = db['Topic']
     DocCollection = db['Doc']
 
-    path = DocCollection.find_one({"_id":ObjectId(docID)},{"_id":0, "files":1, "tag":1}) 
+    path = DocCollection.find_one({"_id": ObjectId(docID)}, {
+                                  "_id": 0, "files": 1, "tag": 1})
 
-    TopicCollection.update_one({"name": path["tag"]},{"$inc" : {"docCount":-1}})
-    TopicCollection.update_one({"name": path["tag"]},{"$pull" : {"docIDs" : ObjectId(docID)}})
+    TopicCollection.update_one({"name": path["tag"]}, {
+                               "$inc": {"docCount": -1}})
+    TopicCollection.update_one({"name": path["tag"]}, {
+                               "$pull": {"docIDs": ObjectId(docID)}})
 
-    DocCollection.delete_one({"_id" : ObjectId(docID)})
-    TopicCollection.delete_many({"docCount":0})
+    DocCollection.delete_one({"_id": ObjectId(docID)})
+    TopicCollection.delete_many({"docCount": 0})
 
     for (index, files) in enumerate(path["files"]):
         try:
@@ -284,35 +334,41 @@ def deleteDocument(docID):
     return "Document deleted"
 
 
-@app.route("/getTopicColor/<topic>", methods = ['GET'])
+@app.route("/getTopicColor/<topic>", methods=['GET'])
 def getTopicColor(topic):
-    dbServer = pymongo.MongoClient(str(os.getenv('MONGO_DB_URI')),server_api=ServerApi('1'))
+    dbServer = pymongo.MongoClient(
+        str(os.getenv('MONGO_DB_URI')), server_api=ServerApi('1'))
     db = dbServer['webDataBase']
     TopicCollection = db['Topic']
-    topic = TopicCollection.find_one({"name": topic},{"_id":0, "tagColor":1})
+    topic = TopicCollection.find_one(
+        {"name": topic}, {"_id": 0, "tagColor": 1})
     print(topic)
-    
+
     if topic is None:
         abort("Topic not found")
     return topic
 
 
-@app.route("/editDB", methods = ['POST'])
+@app.route("/editDB", methods=['POST'])
 def editDatabase():
     return ""
-# For debug purpose never deploy in production. 
+# For debug purpose never deploy in production.
+
 
 @app.route("/login")
 def loginCredential():
     respondPayload = make_response("login")
-    respondPayload.set_cookie("auth-id", "LOWERCASE GUY", httponly = True, secure = False)
+    respondPayload.set_cookie(
+        "auth-id", "LOWERCASE GUY", httponly=True, secure=False)
     return respondPayload
+
 
 @app.route("/logout")
 def logoutCredential():
     respondPayload = make_response("logout")
     respondPayload.set_cookie("auth-id", "", max_age=0)
     return respondPayload
+
 
 def generate_pleasing_color():
     """Generate a pleasing color using the HSL color model."""
@@ -329,14 +385,3 @@ def generate_pleasing_color():
     # Convert RGB values to integers between 0 and 255
     r, g, b = [int(x * 255) for x in rgb]
     return '#{:02x}{:02x}{:02x}'.format(r, g, b)
-
-
-
-
-
-
-
-
-
-
-
