@@ -275,7 +275,7 @@ def uploadDocument():
         {"name": research_topic},
         {'$inc': {'docCount': 1}}
     )
-
+    print("hello owrld")
     print("pass update topic database")
     print("------Docuds=====")
     for (index, document) in enumerate(documents):
