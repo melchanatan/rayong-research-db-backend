@@ -279,8 +279,8 @@ def uploadDocument():
     print("pass update topic database")
     print("------Docuds=====")
     for (index, document) in enumerate(documents):
-        print(documents[index])
-        print(documentFiles[index])
+        # print(documents[index])
+        # print(documentFiles[index])
 
         try:
             documents[index].save(os.path.join(
