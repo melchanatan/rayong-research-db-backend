@@ -22,12 +22,11 @@ allowedFileExtension = ['xlsx', 'pdf', 'docx', 'csv']
 app = Flask(__name__)
 blueprint = Blueprint('blueprint', __name__)
 
-cors = CORS(app, resources={r"/*": {"origins": "*"}})
+# cors = CORS(app, resources={r"/*": {"origins": "*"}})
+cors = CORS(app)
+
 app.config['MAX_CONTENT_LENGTH'] = 512 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = str(os.getenv('ARCHIVE_DIRECTORY'))
-
-print(os.path.join(os.path.abspath(os.sep),
-      app.config['UPLOAD_FOLDER'], "ues"))
 
 
 def bad_request(message):
@@ -152,9 +151,7 @@ def downloadDocument(docID, index):
         print(path)
         path = path["files"][index]
 
-        print(os.path.join(app.config['UPLOAD_FOLDER'], str(path)))
     except Exception as e:
-        print(os.path.join(app.config['UPLOAD_FOLDER'], str(path)))
         print(e)
         abort(400)
 
@@ -281,8 +278,6 @@ def uploadDocument():
 
     print("pass update topic database")
     print("------Docuds=====")
-    print(documents)
-
     for (index, document) in enumerate(documents):
         print(documents[index])
         print(documentFiles[index])
