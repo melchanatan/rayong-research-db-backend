@@ -164,7 +164,7 @@ def downloadDocument(docID, index):
     return send_file(os.path.join(app.config['UPLOAD_FOLDER'], str(path)), as_attachment=True)
 
 
-@app.route("/editDoc/<docID>", methods=["POST"])
+@blueprint.route("/editDoc/<docID>", methods=["POST"])
 def editDocument(docID):
     content_type = request.headers.get("Content-Type")
     print(content_type)
@@ -187,8 +187,10 @@ def editDocument(docID):
         )
 
         print(result)
+        header = {}
+        header['Access-Control-Allow-Origin'] = '*'
         if result.modified_count == 1:
-            return jsonify({'message': 'User updated successfully'}), 200
+            return jsonify({'message': 'User updated successfully', 'header': header}), 200
         else:
             return jsonify({'message': 'User not found'}), 404
     return abort(400)
