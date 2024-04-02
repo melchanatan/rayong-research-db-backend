@@ -161,7 +161,7 @@ def downloadDocument(docID, index):
     return send_file(os.path.join(app.config['UPLOAD_FOLDER'], str(path)), as_attachment=True)
 
 
-@app.route("/editDoc/<docID>", methods=['POST'])
+@app.route("/editDoc/<docID>", methods=['PATCH'])
 def editDocument(docID):
     resp = make_response("Foo bar baz")
     resp.headers.add("Access-Control-Allow-Origin", "*")
