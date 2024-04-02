@@ -159,7 +159,8 @@ def editDocument(docID):
     content_type = request.headers.get("Content-Type")
     print(content_type)
     json = {}
-    if (content_type == 'application/json'):
+    # if (content_type == 'application/json'):
+    if (True):
         json = request.json
 
         print(json)
