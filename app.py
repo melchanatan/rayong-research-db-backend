@@ -2,7 +2,7 @@
 import datetime
 import os
 import random
-from flask import Flask, abort, jsonify, make_response, request
+from flask import Blueprint, Flask, abort, jsonify, make_response, request
 from flask import send_file
 from flask_cors import CORS, cross_origin
 from pymongo.server_api import ServerApi
@@ -20,7 +20,9 @@ load_dotenv()
 allowedFileExtension = ['xlsx', 'pdf', 'docx', 'csv']
 
 app = Flask(__name__)
-cors = CORS(app)
+blueprint = Blueprint('blueprint', __name__)
+
+cors = CORS(app, support_credentials=True,)
 app.config['MAX_CONTENT_LENGTH'] = 512 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = str(os.getenv('ARCHIVE_DIRECTORY'))
 
@@ -31,6 +33,14 @@ print(os.path.join(os.path.abspath(os.sep),
 def bad_request(message):
     response = jsonify({'message': message})
     response.status_code = 400
+    return response
+
+
+@blueprint.after_request
+def after_request(response):
+    header = response.headers
+    header['Access-Control-Allow-Origin'] = '*'
+    # Other headers can be added here if needed
     return response
 
 
